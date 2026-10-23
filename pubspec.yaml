@@ -1,5 +1,5 @@
 name: manobotar_mukti_foundation
-description: A new Flutter project.
+description: "A new Flutter project."
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -14,8 +14,8 @@ dependencies:
   firebase_core: ^2.27.0
   cloud_firestore: ^4.15.8
   firebase_messaging: ^14.7.19
-  pdf: ^3.10.8
-  printing: ^5.11.1
+  pdf: 3.10.4
+  printing: 5.11.0
 
 dev_dependencies:
   flutter_test:

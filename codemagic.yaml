@@ -7,12 +7,11 @@ workflows:
       flutter: 3.19.6
       java: 17
     scripts:
-      - name: Re-create Android files clean
+      - name: Get dependencies
         script: |
-          rm -rf android
-          flutter create . --platforms=android --org com.manobotarmukti.app
+          flutter pub get
       - name: Build Android APK
         script: |
           flutter build apk --debug
     artifacts:
-      - build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/flutter-apk/app-debug.apk

@@ -259,7 +259,7 @@ class _ProfileAdminPageState extends State<ProfileAdminPage> {
     
     double totalAmount = 0;
     final List<List<String>> tableData = [
-      ['নাম', 'ফোন', 'পরিমাণ', 'তারিখ']
+      ['Name', 'Phone', 'Amount', 'Date']
     ];
 
     final now = DateTime.now();
@@ -310,7 +310,7 @@ class _ProfileAdminPageState extends State<ProfileAdminPage> {
     );
 
     await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => pdf.save(),
+      onLayout: (format) => pdf.save(),
     );
   }
 

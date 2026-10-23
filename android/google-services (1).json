@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "964212194097",
+    "project_id": "manobotar-mukti-foundation",
+    "storage_bucket": "manobotar-mukti-foundation.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:964212194097:android:5db12ce416916c004b4e10",
+        "android_client_info": {
+          "package_name": "com.example.manobotar_mukti_foundation"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBuMS-0eVwu8IkVhXQIELJ6fwcC_HI-1LM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

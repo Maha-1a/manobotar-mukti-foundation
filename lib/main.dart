@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const ManobotarMuktiApp());
 }
 
@@ -69,6 +73,7 @@ class _MainPageState extends State<MainPage> {
   }
 }
 
+// ----------------- অনুদান স্ক্রিন (Donation Screen) -----------------
 class DonationScreen extends StatefulWidget {
   const DonationScreen({super.key});
 
@@ -81,8 +86,9 @@ class _DonationScreenState extends State<DonationScreen> {
   final _amountController = TextEditingController();
   final _trxController = TextEditingController();
   final _phoneController = TextEditingController();
+  bool _isLoading = false;
 
-  void _submitDonation() {
+  void _submitDonation() async {
     if (_amountController.text.isEmpty || _trxController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -93,26 +99,56 @@ class _DonationScreenState extends State<DonationScreen> {
       return;
     }
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('ধন্যবাদ!'),
-        content: Text(
-          'আপনার ${_amountController.text} টাকার অনুদানের তথ্য সফলভাবে জমা নেওয়া হয়েছে।\nমাধ্যম: $_selectedMethod\nTrxID: ${_trxController.text}',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _amountController.clear();
-              _trxController.clear();
-              _phoneController.clear();
-            },
-            child: const Text('ঠিক আছে'),
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Firebase Firestore এ ডাটা সেভ করা
+      await FirebaseFirestore.instance.collection('donations').add({
+        'method': _selectedMethod,
+        'amount': _amountController.text,
+        'trxId': _trxController.text,
+        'phone': _phoneController.text,
+        'status': 'Pending',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('ধন্যবাদ!'),
+          content: Text(
+            'আপনার ${_amountController.text} টাকার অনুদানের তথ্য সফলভাবে অনলাইনে জমা হয়েছে।\nঅ্যাডমিন যাচাই করার পর এটি অনুমোদিত হবে।',
           ),
-        ],
-      ),
-    );
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _amountController.clear();
+                _trxController.clear();
+                _phoneController.clear();
+              },
+              child: const Text('ঠিক আছে'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('ত্রুটি হয়েছে: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -129,7 +165,6 @@ class _DonationScreenState extends State<DonationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Reminder Card
             Card(
               color: Colors.green[50],
               child: const ListTile(
@@ -142,15 +177,11 @@ class _DonationScreenState extends State<DonationScreen> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Accounts Header
             const Text(
               'আমাদের অ্যাকাউন্ট নম্বরসমূহ',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-
-            // Accounts Grid
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
@@ -159,41 +190,18 @@ class _DonationScreenState extends State<DonationScreen> {
               crossAxisSpacing: 10,
               mainAxisSpacing: 10,
               children: [
-                _buildAccountCard(
-                  'বিকাশ (Personal)',
-                  '01700-000000',
-                  Colors.pink[100]!,
-                  Colors.pink[900]!,
-                ),
-                _buildAccountCard(
-                  'নগদ (Personal)',
-                  '01800-000000',
-                  Colors.orange[100]!,
-                  Colors.orange[900]!,
-                ),
-                _buildAccountCard(
-                  'ব্যাংক অ্যাকাউন্ট',
-                  '1234 5678 9012\nIslami Bank',
-                  Colors.blue[100]!,
-                  Colors.blue[900]!,
-                ),
-                _buildAccountCard(
-                  'ক্যাশ (Cash)',
-                  'অফিসে সরাসরি জমা দিন',
-                  Colors.grey[200]!,
-                  Colors.black87,
-                ),
+                _buildAccountCard('বিকাশ (Personal)', '01700-000000', Colors.pink[100]!, Colors.pink[900]!),
+                _buildAccountCard('নগদ (Personal)', '01800-000000', Colors.orange[100]!, Colors.orange[900]!),
+                _buildAccountCard('ব্যাংক অ্যাকাউন্ট', '1234 5678 9012\nIslami Bank', Colors.blue[100]!, Colors.blue[900]!),
+                _buildAccountCard('ক্যাশ (Cash)', 'অফিসে সরাসরি জমা দিন', Colors.grey[200]!, Colors.black87),
               ],
             ),
             const SizedBox(height: 20),
-
-            // Form
             const Text(
               'অনুদানের তথ্য জমা দিন',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-
             DropdownButtonFormField<String>(
               value: _selectedMethod,
               decoration: const InputDecoration(labelText: 'পেমেন্ট মাধ্যম'),
@@ -214,25 +222,18 @@ class _DonationScreenState extends State<DonationScreen> {
             TextField(
               controller: _amountController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'অনুদানের পরিমাণ (টাকা)',
-              ),
+              decoration: const InputDecoration(labelText: 'অনুদানের পরিমাণ (টাকা)'),
             ),
             TextField(
               controller: _trxController,
-              decoration: const InputDecoration(
-                labelText: 'ট্রানজেকশন আইডি (TrxID) / রেফারেন্স',
-              ),
+              decoration: const InputDecoration(labelText: 'ট্রানজেকশন আইডি (TrxID) / রেফারেন্স'),
             ),
             TextField(
               controller: _phoneController,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'প্রেরকের মোবাইল নম্বর (ঐচ্ছিক)',
-              ),
+              decoration: const InputDecoration(labelText: 'প্রেরকের মোবাইল নম্বর (ঐচ্ছিক)'),
             ),
             const SizedBox(height: 20),
-
             SizedBox(
               width: double.infinity,
               height: 48,
@@ -241,11 +242,13 @@ class _DonationScreenState extends State<DonationScreen> {
                   backgroundColor: Colors.green[800],
                   foregroundColor: Colors.white,
                 ),
-                onPressed: _submitDonation,
-                child: const Text(
-                  'তথ্য জমা দিন',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                onPressed: _isLoading ? null : _submitDonation,
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        'তথ্য জমা দিন',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
               ),
             ),
           ],
@@ -254,8 +257,7 @@ class _DonationScreenState extends State<DonationScreen> {
     );
   }
 
-  Widget _buildAccountCard(
-      String title, String number, Color bg, Color textColor) {
+  Widget _buildAccountCard(String title, String number, Color bg, Color textColor) {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -266,25 +268,16 @@ class _DonationScreenState extends State<DonationScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: textColor,
-              fontSize: 14,
-            ),
-          ),
+          Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: textColor, fontSize: 14)),
           const SizedBox(height: 4),
-          Text(
-            number,
-            style: TextStyle(color: textColor.withOpacity(0.8), fontSize: 12),
-          ),
+          Text(number, style: TextStyle(color: textColor.withOpacity(0.8), fontSize: 12)),
         ],
       ),
     );
   }
 }
 
+// ----------------- কার্যক্রম স্ক্রিন (Activities Screen) -----------------
 class ActivitiesScreen extends StatelessWidget {
   const ActivitiesScreen({super.key});
 
@@ -326,8 +319,46 @@ class ActivitiesScreen extends StatelessWidget {
   }
 }
 
+// ----------------- প্রোফাইল ও অ্যাডমিন প্যানেল স্ক্রিন (Profile & Admin) -----------------
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
+
+  void _showAdminLoginDialog(BuildContext context) {
+    final passwordController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('অ্যাডমিন প্যানেল লগইন'),
+        content: TextField(
+          controller: passwordController,
+          obscureText: true,
+          decoration: const InputDecoration(labelText: 'সিক্রেট পিন দিন (যেমন: 1234)'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('বাতিল'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (passwordController.text == '1234') {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AdminPanelScreen()),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('ভুল পিন! সঠিক পিন দিন (1234)'), backgroundColor: Colors.red),
+                );
+              }
+            },
+            child: const Text('লগইন'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -358,8 +389,75 @@ class ProfileScreen extends StatelessWidget {
               onPressed: () {},
               child: const Text('মাসিক রিমাইন্ডার সেট করুন'),
             ),
+            const SizedBox(height: 30),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(foregroundColor: Colors.green[800]),
+              onPressed: () => _showAdminLoginDialog(context),
+              icon: const Icon(Icons.admin_panel_settings),
+              label: const Text('অ্যাডমিন প্যানেল (Admin Panel)'),
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ----------------- অ্যাডমিন ড্যাশবোর্ড (Admin Dashboard) -----------------
+class AdminPanelScreen extends StatelessWidget {
+  const AdminPanelScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('অ্যাডমিন ড্যাশবোর্ড (অনুদান তালিকা)'),
+        backgroundColor: Colors.green[800],
+        foregroundColor: Colors.white,
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('donations').orderBy('timestamp', descending: true).snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('এখনও কোনো অনুদানের তথ্য জমা পড়েনি।'));
+          }
+
+          final docs = snapshot.data!.docs;
+
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              var data = docs[index].data() as Map<String, dynamic>;
+              String docId = docs[index].id;
+
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: ListTile(
+                  title: Text(
+                    'মাধ্যম: ${data['method']} | পরিমাণ: ৳${data['amount']}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    'TrxID: ${data['trxId']}\nনম্বার: ${data['phone'] ?? 'নেই'}\nস্ট্যাটাস: ${data['status']}',
+                  ),
+                  isThreeLine: true,
+                  trailing: IconButton(
+                    icon: const Icon(Icons.check_circle, color: Colors.green, size: 30),
+                    onPressed: () {
+                      FirebaseFirestore.instance.collection('donations').doc(docId).update({
+                        'status': 'Approved',
+                      });
+                    },
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

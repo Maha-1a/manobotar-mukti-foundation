@@ -7,6 +7,9 @@ workflows:
       flutter: 3.19.6
       java: 17
     scripts:
+      - name: Recreate Android files
+        script: |
+          flutter create . --platforms=android
       - name: Get dependencies
         script: |
           flutter pub get

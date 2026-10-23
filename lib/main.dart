@@ -294,7 +294,7 @@ class _ProfileAdminPageState extends State<ProfileAdminPage> {
       pw.Page(
         build: (pw.Context context) {
           return pw.Column(
-            cross: pw.CrossAxisAlignment.start,
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text('Manobotar Mukti Foundation', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 5),
@@ -310,7 +310,7 @@ class _ProfileAdminPageState extends State<ProfileAdminPage> {
     );
 
     await Printing.layoutPdf(
-      onLayout: (format) => pdf.save(),
+      onLayout: (PdfPageFormat format) async => pdf.save(),
     );
   }
 

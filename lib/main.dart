@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -253,67 +250,6 @@ class _ProfileAdminPageState extends State<ProfileAdminPage> {
     }
   }
 
-  Future<void> _generatePdfReport(String type) async {
-    final pdf = pw.Document();
-    final snapshot = await FirebaseFirestore.instance.collection('donations').get();
-    
-    double totalAmount = 0;
-    final List<List<String>> tableData = [
-      ['Name', 'Phone', 'Amount', 'Date']
-    ];
-
-    final now = DateTime.now();
-
-    for (var doc in snapshot.docs) {
-      final data = doc.data();
-      final Timestamp? ts = data['timestamp'];
-      if (ts != null) {
-        final date = ts.toDate();
-        bool include = false;
-
-        if (type == 'monthly' && date.month == now.month && date.year == now.year) {
-          include = true;
-        } else if (type == 'yearly' && date.year == now.year) {
-          include = true;
-        }
-
-        if (include) {
-          final amt = (data['amount'] ?? 0).toDouble();
-          totalAmount += amt;
-          tableData.add([
-            data['name'] ?? '',
-            data['phone'] ?? '',
-            'Tk $amt',
-            "${date.day}/${date.month}/${date.year}"
-          ]);
-        }
-      }
-    }
-
-    pdf.addPage(
-      pw.Page(
-        build: (pw.Context context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text('Manobotar Mukti Foundation', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
-              pw.SizedBox(height: 5),
-              pw.Text('Report Type: ${type.toUpperCase()}', style: const pw.TextStyle(fontSize: 16)),
-              pw.SizedBox(height: 15),
-              pw.TableHelper.fromTextArray(data: tableData),
-              pw.SizedBox(height: 15),
-              pw.Text('Total Collection: Tk $totalAmount', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-            ],
-          );
-        },
-      ),
-    );
-
-    await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => pdf.save(),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     if (!_isAdminLoggedIn) {
@@ -361,21 +297,9 @@ class _ProfileAdminPageState extends State<ProfileAdminPage> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            const Text('রিপোর্ট ডাউনলোড করুন', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text('অ্যাডমিন প্যানেল সফলভাবে সংযুক্ত হয়েছে', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.picture_as_pdf),
-              label: const Text('চলতি মাসের PDF রিপোর্ট'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], minimumSize: const Size.fromHeight(50)),
-              onPressed: () => _generatePdfReport('monthly'),
-            ),
-            const SizedBox(height: 15),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.picture_as_pdf),
-              label: const Text('চলতি বছরের PDF রিপোর্ট'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey, minimumSize: const Size.fromHeight(50)),
-              onPressed: () => _generatePdfReport('yearly'),
-            ),
+            const Text('এখানে ফাউন্ডেশনের সকল অনুদান ও ব্যবস্থাপনা সুরক্ষিত রয়েছে।', textAlign: TextAlign.center),
           ],
         ),
       ),

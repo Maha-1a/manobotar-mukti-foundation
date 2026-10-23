@@ -1,6 +1,7 @@
 name: manobotar_mukti_foundation
-description: A new Flutter project for Manobotar Mukti Foundation.
+description: A new Flutter project.
 publish_to: 'none'
+
 version: 1.0.0+1
 
 environment:
@@ -9,7 +10,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.2
+  cupertino_icons: ^1.0.6
+  firebase_core: ^2.27.0
+  cloud_firestore: ^4.15.8
+  firebase_messaging: ^14.7.19
 
 dev_dependencies:
   flutter_test:

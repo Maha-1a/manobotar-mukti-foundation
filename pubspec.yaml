@@ -1,4 +1,4 @@
- name: manobotar_mukti_foundation
+name: manobotar_mukti_foundation
 description: "A new Flutter project."
 publish_to: 'none'
 
@@ -13,18 +13,11 @@ dependencies:
   cupertino_icons: ^1.0.6
   firebase_core: ^2.27.0
   cloud_firestore: ^4.15.8
-  firebase_messaging: ^14.7.19
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
-  flutter_launcher_icons: "^0.13.1"
-
-flutter_launcher_icons:
-  android: "launcher_icon"
-  ios: true
-  image_path: "assets/app_logo.png"
 
 flutter:
   uses-material-design: true

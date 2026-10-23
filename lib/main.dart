@@ -78,7 +78,7 @@ class _DonationFormPageState extends State<DonationFormPage> {
   Future<void> _submitDonation() async {
     if (_nameController.text.isEmpty || _amountController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('নাম এবং টাকার পরিমাণ লিখুন')),
+        const SnackBar(content: Text('অনুগ্রহ করে নাম এবং টাকার পরিমাণ লিখুন')),
       );
       return;
     }
@@ -87,25 +87,29 @@ class _DonationFormPageState extends State<DonationFormPage> {
 
     try {
       await FirebaseFirestore.instance.collection('donations').add({
-        'name': _nameController.text,
-        'amount': double.tryParse(_amountController.text) ?? 0,
-        'phone': _phoneController.text,
-        'date': Timestamp.now(),
+        'name': _nameController.text.trim(),
+        'amount': double.parse(_amountController.text.trim()),
+        'phone': _phoneController.text.trim(),
+        'timestamp': FieldValue.serverTimestamp(),
       });
 
       _nameController.clear();
       _amountController.clear();
       _phoneController.clear();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ধন্যবাদ! আপনার দান সফলভাবে গ্রহণ করা হয়েছে।')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('ধন্যবাদ! আপনার অনুদান সফলভাবে জমা হয়েছে।')),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('ত্রুটি ঘটেছে: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('ত্রুটি ঘটেছে: $e')),
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -117,51 +121,58 @@ class _DonationFormPageState extends State<DonationFormPage> {
         centerTitle: true,
         backgroundColor: Colors.green[700],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Image.asset(
-                'assets/app_logo.png',
-                height: 100,
-                errorBuilder: (_, __, ___) => const Icon(Icons.favorite, size: 80, color: Colors.green),
+        child: Column(
+          children: [
+            Image.asset('assets/app_logo.png', height: 100, errorBuilder: (_, __, ___) => const Icon(Icons.handshake, size: 80, color: Colors.green)),
+            const SizedBox(height: 10),
+            const Text(
+              'মানবতার সেবায় আপনার হাত বাড়িয়ে দিন',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
+            ),
+            const SizedBox(height: 25),
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'আপনার নাম',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person),
               ),
-              const SizedBox(height: 15),
-              const Text(
-                'মানবতার সেবায় আপনার সাহায্য পাঠাতেন',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 15),
+            TextField(
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'ফোন নম্বর (ঐচ্ছিক)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.phone),
               ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'আপনার নাম', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 15),
+            TextField(
+              controller: _amountController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'অনুদানের পরিমাণ (টাকা)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.attach_money),
               ),
-              const SizedBox(height: 15),
-              TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: 'মোবাইল নম্বর (ঐচ্ছিক)', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 15),
-              TextField(
-                controller: _amountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'দানের পরিমাণ (টাকা)', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 20),
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: _submitDonation,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green[700],
-                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                      ),
-                      child: const Text('দান জমা দিন', style: TextStyle(fontSize: 16, color: Colors.white)),
+            ),
+            const SizedBox(height: 25),
+            _isLoading
+                ? const CircularProgressIndicator()
+                : ElevatedButton(
+                    onPressed: _submitDonation,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green[700],
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                      textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-            ],
-          ),
+                    child: const Text('অনুমোদন করুন', style: TextStyle(color: Colors.white)),
+                  ),
+          ],
         ),
       ),
     );
@@ -174,30 +185,43 @@ class HistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('সাম্প্রতিক অনুদানসমূহ'), backgroundColor: Colors.green[700]),
+      appBar: AppBar(
+        title: const Text('অনুদানের ইতিহাস'),
+        backgroundColor: Colors.green[700],
+      ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('donations').orderBy('date', descending: true).snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('donations')
+            .orderBy('timestamp', descending: true)
+            .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('এখনো কোনো অনুদান জমা হয়নি।'));
-          }
+          if (snapshot.hasError) return const Center(child: Text('ডাটা লোড করতে সমস্যা হয়েছে'));
+          if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
 
           final docs = snapshot.data!.docs;
+          if (docs.isEmpty) return const Center(child: Text('এখনো কোনো অনুদান জমা হয়নি'));
+
           return ListView.builder(
             itemCount: docs.length,
             itemBuilder: (context, index) {
               final data = docs[index].data() as Map<String, dynamic>;
-              final date = (data['date'] as Timestamp?)?.toDate();
+              final name = data['name'] ?? 'অজ্ঞাত';
+              final amount = data['amount'] ?? 0;
+              final timestamp = data['timestamp'] as Timestamp?;
+              final dateStr = timestamp != null
+                  ? "${timestamp.toDate().day}/${timestamp.toDate().month}/${timestamp.toDate().year}"
+                  : 'নতুন';
+
               return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+                margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 6),
                 child: ListTile(
-                  leading: const CircleAvatar(backgroundColor: Colors.green, child: Icon(Icons.attach_money, color: Colors.white)),
-                  title: Text(data['name'] ?? 'বেনামী'),
-                  subtitle: Text(date != null ? '${date.day}/${date.month}/${date.year}' : ''),
-                  trailing: Text('৳${data['amount']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.green,
+                    child: Icon(Icons.monetization_on, color: Colors.white),
+                  ),
+                  title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text('তারিখ: $dateStr'),
+                  trailing: Text('৳ $amount', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
                 ),
               );
             },
@@ -219,75 +243,66 @@ class _ProfileAdminPageState extends State<ProfileAdminPage> {
   final _pinController = TextEditingController();
   bool _isAdminLoggedIn = false;
 
-  void _verifyPin() {
+  void _loginAdmin() {
     if (_pinController.text == '1234') {
       setState(() => _isAdminLoggedIn = true);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ভুল পিন কোড!')),
+        const SnackBar(content: Text('ভুল পিন নম্বর! (সঠিক পিন: 1234)')),
       );
     }
   }
 
-  Future<void> _generatePdf(List<QueryDocumentSnapshot> docs, String reportType) async {
+  Future<void> _generatePdfReport(String type) async {
     final pdf = pw.Document();
-
+    final snapshot = await FirebaseFirestore.instance.collection('donations').get();
+    
     double totalAmount = 0;
-    final List<List<String>> tableData = [];
+    final List<List<String>> tableData = [
+      ['নাম', 'ফোন', 'পরিমাণ', 'তারিখ']
+    ];
 
     final now = DateTime.now();
 
-    for (var doc in docs) {
-      final data = doc.data() as Map<String, dynamic>;
-      final date = (data['date'] as Timestamp?)?.toDate();
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+      final Timestamp? ts = data['timestamp'];
+      if (ts != null) {
+        final date = ts.toDate();
+        bool include = false;
 
-      if (date == null) continue;
+        if (type == 'monthly' && date.month == now.month && date.year == now.year) {
+          include = true;
+        } else if (type == 'yearly' && date.year == now.year) {
+          include = true;
+        }
 
-      bool isMatch = false;
-      if (reportType == 'Monthly' && date.month == now.month && date.year == now.year) {
-        isMatch = true;
-      } else if (reportType == 'Yearly' && date.year == now.year) {
-        isMatch = true;
-      }
-
-      if (isMatch) {
-        final amount = (data['amount'] ?? 0).toDouble();
-        totalAmount += amount;
-        tableData.add([
-          data['name'] ?? 'N/A',
-          data['phone'] ?? 'N/A',
-          'BDT ${amount.toStringAsFixed(2)}',
-          '${date.day}/${date.month}/${date.year}'
-        ]);
+        if (include) {
+          final amt = (data['amount'] ?? 0).toDouble();
+          totalAmount += amt;
+          tableData.add([
+            data['name'] ?? '',
+            data['phone'] ?? '',
+            'Tk $amt',
+            "${date.day}/${date.month}/${date.year}"
+          ]);
+        }
       }
     }
 
     pdf.addPage(
       pw.Page(
-        pageFormat: PdfPageFormat.a4,
         build: (pw.Context context) {
           return pw.Column(
             cross: pw.CrossAxisAlignment.start,
             children: [
-              pw.Header(
-                level: 0,
-                child: pw.Text(
-                  'Manobotar Mukti Foundation - $reportType Report',
-                  style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
-                ),
-              ),
-              pw.SizedBox(height: 10),
-              pw.Text('Report Generated Date: ${now.day}/${now.month}/${now.year}'),
-              pw.Text('Total Collection: BDT ${totalAmount.toStringAsFixed(2)}',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.green800)),
-              pw.SizedBox(height: 20),
-              pw.TableHelper.fromTextArray(
-                headers: ['Name', 'Phone', 'Amount', 'Date'],
-                data: tableData,
-                headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-                headerDecoration: const pw.BoxDecoration(color: PdfColors.green700),
-                rowDecoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300))),
-              ),
+              pw.Text('Manobotar Mukti Foundation', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+              pw.SizedBox(height: 5),
+              pw.Text('Report Type: ${type.toUpperCase()}', style: const pw.TextStyle(fontSize: 16)),
+              pw.SizedBox(height: 15),
+              pw.TableHelper.fromTextArray(data: tableData),
+              pw.SizedBox(height: 15),
+              pw.Text('Total Collection: Tk $totalAmount', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
             ],
           );
         },
@@ -296,7 +311,6 @@ class _ProfileAdminPageState extends State<ProfileAdminPage> {
 
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
-      name: 'Donation_Report_$reportType.pdf',
     );
   }
 
@@ -304,25 +318,27 @@ class _ProfileAdminPageState extends State<ProfileAdminPage> {
   Widget build(BuildContext context) {
     if (!_isAdminLoggedIn) {
       return Scaffold(
-        appBar: AppBar(title: const Text('অ্যাডমিন লগইন'), backgroundColor: Colors.green[700]),
+        appBar: AppBar(title: const Text('অ্যাডমিন প্যানেল'), backgroundColor: Colors.green[700]),
         body: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(25.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.security, size: 80, color: Colors.green),
-              const SizedBox(height: 20),
+              const Icon(Icons.admin_panel_settings, size: 70, color: Colors.green),
+              const SizedBox(height: 15),
+              const Text('অ্যাডমিন পিন কোড দিন', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 15),
               TextField(
                 controller: _pinController,
                 obscureText: true,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'অ্যাডমিন পিন কোড দিন (1234)', border: OutlineInputBorder()),
+                decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'PIN Enter করুন'),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _verifyPin,
+                onPressed: _loginAdmin,
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
-                child: const Text('প্রবেশ করুন', style: TextStyle(color: Colors.white)),
+                child: const Text('লগইন করুন', style: TextStyle(color: Colors.white)),
               )
             ],
           ),
@@ -341,74 +357,27 @@ class _ProfileAdminPageState extends State<ProfileAdminPage> {
           )
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('donations').orderBy('date', descending: true).snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final docs = snapshot.data?.docs ?? [];
-          double totalSum = 0;
-          for (var doc in docs) {
-            totalSum += ((doc.data() as Map<String, dynamic>)['amount'] ?? 0).toDouble();
-          }
-
-          return Column(
-            children: [
-              Card(
-                color: Colors.green[50],
-                margin: const EdgeInsets.all(15),
-                child: Padding(
-                  padding: const EdgeInsets.all(15.0),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('সর্বমোট তহবিল:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          Text('৳$totalSum', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green)),
-                        ],
-                      ),
-                      const Divider(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: () => _generatePdf(docs, 'Monthly'),
-                            icon: const Icon(Icons.picture_as_pdf, size: 18),
-                            label: const Text('মাসিক PDF'),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], foregroundColor: Colors.white),
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: () => _generatePdf(docs, 'Yearly'),
-                            icon: const Icon(Icons.picture_as_pdf, size: 18),
-                            label: const Text('বাৎসরিক PDF'),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[700], foregroundColor: Colors.white),
-                          ),
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: docs.length,
-                  itemBuilder: (context, index) {
-                    final data = docs[index].data() as Map<String, dynamic>;
-                    final date = (data['date'] as Timestamp?)?.toDate();
-                    return ListTile(
-                      title: Text('${data['name']} (${data['phone'] ?? "No Phone"})'),
-                      subtitle: Text(date != null ? '${date.day}/${date.month}/${date.year}' : ''),
-                      trailing: Text('৳${data['amount']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    );
-                  },
-                ),
-              ),
-            ],
-          );
-        },
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          children: [
+            const Text('রিপোর্ট ডাউনলোড করুন', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.picture_as_pdf),
+              label: const Text('চলতি মাসের PDF রিপোর্ট'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], minimumSize: const Size.fromHeight(50)),
+              onPressed: () => _generatePdfReport('monthly'),
+            ),
+            const SizedBox(height: 15),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.picture_as_pdf),
+              label: const Text('চলতি বছরের PDF রিপোর্ট'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey, minimumSize: const Size.fromHeight(50)),
+              onPressed: () => _generatePdfReport('yearly'),
+            ),
+          ],
+        ),
       ),
     );
   }

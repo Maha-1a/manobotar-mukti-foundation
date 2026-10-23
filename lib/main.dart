@@ -62,7 +62,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ১. ডোনেশন ফরম পেজ
 class DonationFormPage extends StatefulWidget {
   const DonationFormPage({super.key});
 
@@ -123,7 +122,11 @@ class _DonationFormPageState extends State<DonationFormPage> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              Image.asset('assets/app_logo.png', height: 100, errorBuilder: (_, __, ___) => const Icon(Icons.favorite, size: 80, color: Colors.green)),
+              Image.asset(
+                'assets/app_logo.png',
+                height: 100,
+                errorBuilder: (_, __, ___) => const Icon(Icons.favorite, size: 80, color: Colors.green),
+              ),
               const SizedBox(height: 15),
               const Text(
                 'মানবতার সেবায় আপনার সাহায্য পাঠাতেন',
@@ -165,7 +168,6 @@ class _DonationFormPageState extends State<DonationFormPage> {
   }
 }
 
-// ২. সাধারণ ইতিহাস পেজ
 class HistoryPage extends StatelessWidget {
   const HistoryPage({super.key});
 
@@ -206,7 +208,6 @@ class HistoryPage extends StatelessWidget {
   }
 }
 
-// ৩. অ্যাডমিন প্যানেল এবং PDF জেনারেটর
 class ProfileAdminPage extends StatefulWidget {
   const ProfileAdminPage({super.key});
 
@@ -228,7 +229,6 @@ class _ProfileAdminPageState extends State<ProfileAdminPage> {
     }
   }
 
-  // PDF তৈরির মেথড
   Future<void> _generatePdf(List<QueryDocumentSnapshot> docs, String reportType) async {
     final pdf = pw.Document();
 
@@ -243,7 +243,6 @@ class _ProfileAdminPageState extends State<ProfileAdminPage> {
 
       if (date == null) continue;
 
-      // ফিল্টার: মাসিক অথবা বাৎসরিক
       bool isMatch = false;
       if (reportType == 'Monthly' && date.month == now.month && date.year == now.year) {
         isMatch = true;
@@ -257,7 +256,7 @@ class _ProfileAdminPageState extends State<ProfileAdminPage> {
         tableData.add([
           data['name'] ?? 'N/A',
           data['phone'] ?? 'N/A',
-          '৳${amount.toStringAsFixed(2)}',
+          'BDT ${amount.toStringAsFixed(2)}',
           '${date.day}/${date.month}/${date.year}'
         ]);
       }

@@ -10,15 +10,6 @@ workflows:
       - name: Recreate Android files
         script: |
           flutter create . --platforms=android
-      - name: Enable MultiDex in build.gradle
-        script: |
-          BUILD_FILE="android/app/build.gradle"
-          if [ -f "$BUILD_FILE" ]; then
-            sed -i '' 's/defaultConfig {/defaultConfig {\n        multiDexEnabled true/' "$BUILD_FILE"
-            echo "MultiDex enabled successfully!"
-          else
-            echo "build.gradle not found!"
-          fi
       - name: Get dependencies
         script: |
           flutter pub get

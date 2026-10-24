@@ -15,6 +15,6 @@ workflows:
           flutter pub get
       - name: Build Android APK
         script: |
-          flutter build apk --debug
+          flutter build apk --debug --no-shrink
     artifacts:
       - build/app/outputs/flutter-apk/app-debug.apk

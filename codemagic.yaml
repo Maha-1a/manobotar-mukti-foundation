@@ -7,9 +7,9 @@ workflows:
       flutter: 3.19.6
       java: 17
     scripts:
-      - name: Recreate Android files
+      - name: Force MultiDex in Gradle
         script: |
-          flutter create . --platforms=android
+          sed -i '' 's/defaultConfig {/defaultConfig {\n        multiDexEnabled true/' android/app/build.gradle || true
       - name: Get dependencies
         script: |
           flutter pub get
